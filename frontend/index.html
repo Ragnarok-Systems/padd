@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>PADD</title>
+
+  <!-- Highlight.js themes (local) -->
+  <link id="hljs-light" rel="stylesheet" href="./lib/github.min.css" disabled>
+  <link id="hljs-dark" rel="stylesheet" href="./lib/github-dark.min.css">
+
+  <style>
+    /* ===== Theme Variables ===== */
+    :root {
+      --bg: #ffffff;
+      --bg-surface: #f6f8fa;
+      --text: #24292f;
+      --text-secondary: #656d76;
+      --border: #d0d7de;
+      --link: #0969da;
+      --heading: #1f2328;
+      --code-bg: #f6f8fa;
+      --toolbar-bg: #f0f0f0;
+      --toolbar-border: #d0d7de;
+      --blockquote-border: #d0d7de;
+      --blockquote-text: #656d76;
+      --table-border: #d0d7de;
+      --table-alt: #f6f8fa;
+      --drop-bg: rgba(0,0,0,0.03);
+      --drop-border: #c0c0c0;
+      --scrollbar-thumb: #c0c0c0;
+      --scrollbar-hover: #999;
+    }
+
+    [data-theme="dark"] {
+      --bg: #2b2b2b;
+      --bg-surface: #333333;
+      --text: #d4d4d4;
+      --text-secondary: #999999;
+      --border: #444444;
+      --link: #6cb6ff;
+      --heading: #e6e6e6;
+      --code-bg: #1e1e1e;
+      --toolbar-bg: #252525;
+      --toolbar-border: #3a3a3a;
+      --blockquote-border: #555555;
+      --blockquote-text: #999999;
+      --table-border: #444444;
+      --table-alt: #333333;
+      --drop-bg: rgba(255,255,255,0.03);
+      --drop-border: #555555;
+      --scrollbar-thumb: #555;
+      --scrollbar-hover: #777;
+    }
+
+    /* ===== Reset & Base ===== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.2s ease, color 0.2s ease;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ===== Toolbar ===== */
+    #toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 16px;
+      background: var(--toolbar-bg);
+      border-bottom: 1px solid var(--toolbar-border);
+      -webkit-app-region: drag;
+      flex-shrink: 0;
+      user-select: none;
+      min-height: 38px;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #toolbar button {
+      -webkit-app-region: no-drag;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 3px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: inherit;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      line-height: 1.4;
+    }
+
+    #toolbar button:hover {
+      background: var(--bg-surface);
+    }
+
+    #toolbar button:active {
+      opacity: 0.7;
+    }
+
+    .zoom-btn {
+      min-width: 28px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    #app-brand {
+      font-size: 13px;
+      color: var(--text);
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      transition: color 0.2s ease;
+    }
+
+    #filename {
+      font-size: 12px;
+      color: var(--text-secondary);
+      -webkit-app-region: no-drag;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 400px;
+      transition: color 0.2s ease;
+    }
+
+    #zoom-level {
+      font-size: 11px;
+      color: var(--text-secondary);
+      min-width: 36px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      transition: color 0.2s ease;
+    }
+
+    /* ===== Window Controls ===== */
+    .win-ctrl {
+      -webkit-app-region: no-drag;
+      background: none;
+      border: none !important;
+      color: var(--text);
+      padding: 0 12px;
+      cursor: pointer;
+      font-size: 13px;
+      height: 100%;
+      min-height: 38px;
+      line-height: 38px;
+      transition: background 0.1s;
+    }
+    .win-ctrl:hover { background: rgba(128,128,128,0.2); }
+    .win-close:hover { background: #e81123 !important; color: white !important; }
+
+    /* ===== Content Area ===== */
+    #content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    /* ===== Drop Zone ===== */
+    #drop-zone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-secondary);
+      padding: 40px;
+      text-align: center;
+      transition: background 0.2s ease;
+    }
+
+    #drop-zone.drag-over {
+      background: var(--drop-bg);
+    }
+
+    .drop-title {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      color: var(--text);
+      margin-bottom: 4px;
+      opacity: 0.7;
+    }
+
+    .drop-subtitle {
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+      opacity: 0.5;
+    }
+
+    .drop-border {
+      border: 2px dashed var(--drop-border);
+      border-radius: 12px;
+      padding: 40px 60px;
+      transition: border-color 0.2s ease;
+    }
+
+    #drop-zone.drag-over .drop-border {
+      border-color: var(--link);
+    }
+
+    .drop-text {
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .drop-hint {
+      font-size: 12px;
+      opacity: 0.6;
+    }
+
+    .drop-hint kbd {
+      display: inline-block;
+      padding: 1px 5px;
+      font-size: 11px;
+      font-family: inherit;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      background: var(--bg-surface);
+    }
+
+    .hidden { display: none !important; }
+
+    /* ===== Markdown Body ===== */
+    #markdown-body {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 32px 40px 80px 40px;
+      line-height: 1.6;
+      word-wrap: break-word;
+      transform-origin: top center;
+    }
+
+    /* Headings */
+    #markdown-body h1 {
+      font-size: 2em;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.3em;
+      margin: 24px 0 16px 0;
+      color: var(--heading);
+    }
+
+    #markdown-body h2 {
+      font-size: 1.5em;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.3em;
+      margin: 24px 0 16px 0;
+      color: var(--heading);
+    }
+
+    #markdown-body h3 {
+      font-size: 1.25em;
+      font-weight: 600;
+      margin: 24px 0 16px 0;
+      color: var(--heading);
+    }
+
+    #markdown-body h4, #markdown-body h5, #markdown-body h6 {
+      font-weight: 600;
+      margin: 24px 0 16px 0;
+      color: var(--heading);
+    }
+
+    /* Paragraphs & text */
+    #markdown-body p { margin: 0 0 16px 0; }
+    #markdown-body strong { font-weight: 600; }
+    #markdown-body em { font-style: italic; }
+    #markdown-body del { text-decoration: line-through; opacity: 0.7; }
+
+    /* Links */
+    #markdown-body a {
+      color: var(--link);
+      text-decoration: none;
+    }
+    #markdown-body a:hover { text-decoration: underline; }
+
+    /* Code */
+    #markdown-body code {
+      font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+      font-size: 85%;
+      padding: 0.2em 0.4em;
+      background: var(--code-bg);
+      border-radius: 3px;
+    }
+
+    #markdown-body pre {
+      background: var(--code-bg);
+      border-radius: 6px;
+      padding: 16px;
+      overflow-x: auto;
+      margin: 0 0 16px 0;
+      border: 1px solid var(--border);
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+
+    #markdown-body pre code {
+      background: none;
+      padding: 0;
+      font-size: 85%;
+      line-height: 1.5;
+    }
+
+    /* Tables */
+    #markdown-body table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 0 0 16px 0;
+      display: block;
+      overflow-x: auto;
+    }
+
+    #markdown-body table th,
+    #markdown-body table td {
+      border: 1px solid var(--table-border);
+      padding: 6px 13px;
+      text-align: left;
+      transition: border-color 0.2s ease;
+    }
+
+    #markdown-body table th {
+      font-weight: 600;
+      background: var(--bg-surface);
+    }
+
+    #markdown-body table tr:nth-child(even) {
+      background: var(--table-alt);
+    }
+
+    /* Blockquotes */
+    #markdown-body blockquote {
+      padding: 0 1em;
+      border-left: 4px solid var(--blockquote-border);
+      color: var(--blockquote-text);
+      margin: 0 0 16px 0;
+      transition: border-color 0.2s ease, color 0.2s ease;
+    }
+
+    /* Lists */
+    #markdown-body ul, #markdown-body ol {
+      padding-left: 2em;
+      margin: 0 0 16px 0;
+    }
+    #markdown-body li + li { margin-top: 4px; }
+    #markdown-body li > ul, #markdown-body li > ol { margin: 4px 0 0 0; }
+
+    /* Task lists */
+    #markdown-body input[type="checkbox"] {
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    /* Horizontal rules */
+    #markdown-body hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 24px 0;
+      transition: border-color 0.2s ease;
+    }
+
+    /* Images */
+    #markdown-body img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+
+    /* Mermaid diagrams */
+    #markdown-body .mermaid {
+      background: transparent;
+      text-align: center;
+      margin: 16px 0;
+      border: none;
+      padding: 16px 0;
+      overflow-x: auto;
+    }
+
+    #markdown-body .mermaid svg {
+      max-width: 100%;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+
+    /* ===== Platform-specific toolbar padding ===== */
+    .platform-darwin #toolbar {
+      padding-left: 80px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="toolbar" data-tauri-drag-region>
+    <div class="toolbar-left">
+      <span id="app-brand"><strong>PADD</strong></span>
+      <button id="open-btn" title="Open File">Open</button>
+      <span id="filename"></span>
+    </div>
+    <div class="toolbar-right">
+      <button class="zoom-btn" id="zoom-out-btn" title="Zoom Out">&#8722;</button>
+      <span id="zoom-level">100%</span>
+      <button class="zoom-btn" id="zoom-in-btn" title="Zoom In">+</button>
+      <button id="theme-btn" title="Toggle Theme">Light</button>
+      <button class="win-ctrl" id="win-minimize" title="Minimize">&#x2015;</button>
+      <button class="win-ctrl" id="win-maximize" title="Maximize">&#x25A1;</button>
+      <button class="win-ctrl win-close" id="win-close" title="Close">&#x2715;</button>
+    </div>
+  </div>
+
+  <div id="content">
+    <div id="drop-zone">
+      <div class="drop-title">PADD</div>
+      <div class="drop-subtitle">Personal Access Display Device</div>
+      <div class="drop-border">
+        <div class="drop-text">Drop a .md file here to view</div>
+        <div class="drop-hint">or press <kbd>Ctrl+O</kbd> to open</div>
+      </div>
+    </div>
+    <article id="markdown-body" class="hidden"></article>
+  </div>
+
+  <!-- Libraries (browser builds) -->
+  <script src="./lib/marked.min.js"></script>
+  <script src="./lib/highlight.min.js"></script>
+
+  <script>
+    // ===== Tauri API =====
+    const { invoke } = window.__TAURI__.core;
+    const { listen } = window.__TAURI__.event;
+    const { getCurrentWindow } = window.__TAURI__.window;
+
+    // ===== State =====
+    let currentZoom = 100;
+    let currentDirUrl = '';
+    let isDark = localStorage.getItem('padd-theme') !== 'light'; // default dark
+    let mermaidReady = false;
+    let mermaidLoading = false;
+
+    // Configure marked for GFM
+    marked.use({ gfm: true, breaks: false });
+
+    // Highlight helper
+    function highlightCode(code, language) {
+      if (language && hljs.getLanguage(language)) {
+        try { return hljs.highlight(code, { language }).value; } catch (_) {}
+      }
+      try { return hljs.highlightAuto(code).value; } catch (_) {}
+      return null;
+    }
+
+    // Detect platform from user agent
+    const platform = navigator.userAgent.includes('Mac') ? 'darwin'
+      : navigator.userAgent.includes('Win') ? 'win32'
+      : 'linux';
+
+    // Lazy-load mermaid only when a mermaid diagram is encountered
+    function loadMermaid() {
+      if (mermaidReady || mermaidLoading) return Promise.resolve();
+      mermaidLoading = true;
+      return new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = './lib/mermaid.min.js';
+        script.onload = () => {
+          mermaidReady = true;
+          mermaid.initialize({
+            startOnLoad: false,
+            theme: isDark ? 'dark' : 'default',
+            securityLevel: 'loose',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
+          });
+          resolve();
+        };
+        script.onerror = () => { mermaidLoading = false; resolve(); };
+        document.head.appendChild(script);
+      });
+    }
+
+    // ===== Init =====
+    (function init() {
+      // Platform class for toolbar padding
+      if (platform === 'darwin') {
+        document.body.classList.add('platform-darwin');
+        const kbd = document.querySelector('.drop-hint kbd');
+        if (kbd) kbd.textContent = '\u2318+O';
+      }
+
+      // Hide window controls on macOS (uses native traffic lights)
+      if (platform !== 'win32') {
+        document.querySelectorAll('.win-ctrl').forEach(el => el.style.display = 'none');
+      }
+
+      // Apply theme
+      applyTheme();
+
+      // Check if opened via file association (double-click .md file)
+      invoke('get_initial_file').then(data => {
+        if (data) {
+          currentDirUrl = data.dirUrl || '';
+          document.getElementById('filename').textContent = data.name;
+          renderMarkdown(data.content);
+        }
+      }).catch(() => {});
+    })();
+
+    function applyTheme() {
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      document.getElementById('theme-btn').textContent = isDark ? 'Light' : 'Dark';
+      document.getElementById('hljs-light').disabled = isDark;
+      document.getElementById('hljs-dark').disabled = !isDark;
+    }
+
+    // ===== Render Markdown =====
+    async function renderMarkdown(content) {
+      const body = document.getElementById('markdown-body');
+      const dropZone = document.getElementById('drop-zone');
+
+      const html = marked.parse(content);
+      body.innerHTML = html;
+
+      // Resolve relative image paths
+      if (currentDirUrl) {
+        body.querySelectorAll('img').forEach(img => {
+          const src = img.getAttribute('src');
+          if (src && !src.startsWith('http') && !src.startsWith('data:') && !src.startsWith('file:') && !src.startsWith('asset:') && !src.startsWith('tauri:')) {
+            img.src = currentDirUrl + src;
+          }
+        });
+      }
+
+      // Convert mermaid code blocks to mermaid elements
+      body.querySelectorAll('code.language-mermaid').forEach(codeEl => {
+        const pre = codeEl.closest('pre');
+        if (!pre) return;
+        const div = document.createElement('pre');
+        div.className = 'mermaid';
+        div.textContent = codeEl.textContent;
+        pre.replaceWith(div);
+      });
+
+      // Highlight code blocks (skip mermaid)
+      body.querySelectorAll('pre code').forEach(el => {
+        const langClass = Array.from(el.classList).find(c => c.startsWith('language-'));
+        const lang = langClass ? langClass.replace('language-', '') : null;
+        if (lang !== 'mermaid') {
+          const result = highlightCode(el.textContent, lang);
+          if (result) {
+            el.innerHTML = result;
+            el.classList.add('hljs');
+          }
+        }
+      });
+
+      // Render mermaid diagrams
+      await renderMermaidDiagrams();
+
+      // Show content, hide drop zone
+      body.classList.remove('hidden');
+      dropZone.classList.add('hidden');
+
+      // Apply current zoom
+      body.style.zoom = currentZoom / 100;
+
+      // Scroll to top
+      document.getElementById('content').scrollTop = 0;
+    }
+
+    // ===== Mermaid Rendering (lazy-loaded) =====
+    async function renderMermaidDiagrams() {
+      const elements = document.querySelectorAll('#markdown-body .mermaid');
+      if (elements.length === 0) return;
+
+      if (!mermaidReady) {
+        await loadMermaid();
+        if (!mermaidReady) return;
+      }
+
+      elements.forEach(el => {
+        if (!el.getAttribute('data-original')) {
+          el.setAttribute('data-original', el.textContent.trim());
+        }
+      });
+
+      elements.forEach(el => {
+        const original = el.getAttribute('data-original');
+        if (original) {
+          el.removeAttribute('data-processed');
+          el.innerHTML = original;
+        }
+      });
+
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: isDark ? 'dark' : 'default',
+        securityLevel: 'loose',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
+      });
+
+      try {
+        mermaid.init(undefined, '#markdown-body .mermaid');
+      } catch (e) {
+        console.warn('Mermaid rendering error:', e);
+      }
+    }
+
+    // ===== Theme Toggle =====
+    function toggleTheme() {
+      isDark = !isDark;
+      localStorage.setItem('padd-theme', isDark ? 'dark' : 'light');
+      applyTheme();
+      renderMermaidDiagrams();
+    }
+
+    // ===== Zoom =====
+    function setZoom(level, cursorX, cursorY) {
+      const oldZoom = currentZoom;
+      currentZoom = Math.max(50, Math.min(400, level));
+      const body = document.getElementById('markdown-body');
+      const content = document.getElementById('content');
+      if (!body) return;
+
+      if (cursorX !== undefined && cursorY !== undefined && oldZoom !== currentZoom) {
+        const contentRect = content.getBoundingClientRect();
+        const mx = cursorX - contentRect.left;
+        const my = cursorY - contentRect.top;
+        const docX = (content.scrollLeft + mx) / (oldZoom / 100);
+        const docY = (content.scrollTop + my) / (oldZoom / 100);
+        body.style.zoom = currentZoom / 100;
+        content.scrollLeft = docX * (currentZoom / 100) - mx;
+        content.scrollTop = docY * (currentZoom / 100) - my;
+      } else {
+        body.style.zoom = currentZoom / 100;
+      }
+
+      document.getElementById('zoom-level').textContent = currentZoom + '%';
+    }
+
+    // ===== Event Listeners =====
+
+    // Window controls
+    document.getElementById('win-minimize').addEventListener('click', () => invoke('minimize_window'));
+    document.getElementById('win-maximize').addEventListener('click', () => invoke('maximize_window'));
+    document.getElementById('win-close').addEventListener('click', () => invoke('close_window'));
+
+    // Toolbar buttons
+    document.getElementById('open-btn').addEventListener('click', () => {
+      invoke('open_file_dialog').then(data => {
+        if (data) {
+          currentDirUrl = data.dirUrl || '';
+          document.getElementById('filename').textContent = data.name;
+          renderMarkdown(data.content);
+        }
+      });
+    });
+    document.getElementById('zoom-in-btn').addEventListener('click', () => setZoom(currentZoom + 10));
+    document.getElementById('zoom-out-btn').addEventListener('click', () => setZoom(currentZoom - 10));
+    document.getElementById('theme-btn').addEventListener('click', toggleTheme);
+
+    // IPC from Tauri backend
+    listen('file-opened', (event) => {
+      const data = event.payload;
+      currentDirUrl = data.dirUrl || '';
+      document.getElementById('filename').textContent = data.name || 'PADD';
+      renderMarkdown(data.content);
+    });
+
+    listen('zoom', (event) => {
+      const direction = event.payload;
+      if (direction === 'in') setZoom(currentZoom + 10);
+      else if (direction === 'out') setZoom(currentZoom - 10);
+      else setZoom(100);
+    });
+
+    listen('toggle-theme', () => toggleTheme());
+
+    // Tauri drag & drop
+    const appWindow = getCurrentWindow();
+    appWindow.onDragDropEvent(async (event) => {
+      if (event.payload.type === 'over') {
+        document.getElementById('drop-zone').classList.add('drag-over');
+      } else if (event.payload.type === 'cancel' || event.payload.type === 'leave') {
+        document.getElementById('drop-zone').classList.remove('drag-over');
+      } else if (event.payload.type === 'drop') {
+        document.getElementById('drop-zone').classList.remove('drag-over');
+        const paths = event.payload.paths;
+        if (paths.length > 0) {
+          const path = paths[0];
+          if (path.endsWith('.md') || path.endsWith('.markdown')) {
+            try {
+              const result = await invoke('read_file', { filePath: path });
+              if (result && result.content) {
+                currentDirUrl = result.dirUrl || '';
+                document.getElementById('filename').textContent = result.name;
+                renderMarkdown(result.content);
+              }
+            } catch (e) {
+              console.error('Failed to read dropped file:', e);
+            }
+          }
+        }
+      }
+    });
+
+    // Ctrl+Mousewheel zoom towards cursor
+    document.getElementById('content').addEventListener('wheel', (e) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const step = e.deltaY < 0 ? 10 : -10;
+      setZoom(currentZoom + step, e.clientX, e.clientY);
+    }, { passive: false });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key === '=') { e.preventDefault(); setZoom(currentZoom + 10); }
+      else if (mod && e.key === '-') { e.preventDefault(); setZoom(currentZoom - 10); }
+      else if (mod && e.key === '0') { e.preventDefault(); setZoom(100); }
+      else if (mod && e.key === 'o') {
+        e.preventDefault();
+        invoke('open_file_dialog').then(data => {
+          if (data) {
+            currentDirUrl = data.dirUrl || '';
+            document.getElementById('filename').textContent = data.name;
+            renderMarkdown(data.content);
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

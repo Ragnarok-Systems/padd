@@ -1,0 +1,14 @@
+{
+  "name": "padd",
+  "version": "1.0.0",
+  "description": "Personal Access Display Device",
+  "private": true,
+  "scripts": {
+    "dev": "cd src-tauri && cargo run",
+    "build": "cd src-tauri && cargo build --release",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

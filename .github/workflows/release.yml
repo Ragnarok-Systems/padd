@@ -1,0 +1,117 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bundles: nsis
+            artifact-name: padd-windows
+          - os: macos-latest
+            target: universal-apple-darwin
+            bundles: dmg,app
+            artifact-name: padd-macos
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend deps
+        run: npm ci || npm install
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: .
+          args: ${{ matrix.os == 'macos-latest' && '--target universal-apple-darwin --bundles dmg,app' || '--bundles nsis' }}
+
+      - name: Collect artifacts (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          mkdir -p dist-upload
+          find src-tauri/target -type f \( -name "*.exe" -o -name "*.msi" \) -path "*/release/bundle/*" -exec cp {} dist-upload/ \;
+          ls -la dist-upload/
+
+      - name: Collect artifacts (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          mkdir -p dist-upload
+          find src-tauri/target -type f -name "*.dmg" -path "*/release/bundle/*" -exec cp {} dist-upload/ \;
+          ls -la dist-upload/
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: dist-upload/*
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Flatten and list
+        run: |
+          mkdir -p upload
+          find artifacts -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.msi" \) -exec cp {} upload/ \;
+          ls -la upload/
+
+      - name: Upload to Azure Blob Storage
+        uses: azure/cli@v2
+        env:
+          AZURE_STORAGE_ACCOUNT: ragnarokidentityweb
+          AZURE_STORAGE_SAS_TOKEN: ${{ secrets.AZURE_STORAGE_SAS_TOKEN }}
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az storage blob upload-batch \
+              --account-name "$AZURE_STORAGE_ACCOUNT" \
+              --sas-token "$AZURE_STORAGE_SAS_TOKEN" \
+              --destination '$web' \
+              --destination-path downloads \
+              --source upload \
+              --overwrite true
+            echo "Uploaded files:"
+            ls -la upload/
+            echo ""
+            echo "Download URLs:"
+            for f in upload/*; do
+              name=$(basename "$f")
+              echo "  https://ragnarokidentityweb.z21.web.core.windows.net/downloads/$name"
+            done
