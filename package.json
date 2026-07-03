@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "cd src-tauri && cargo run",
     "build": "cd src-tauri && cargo build --release",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "test": "node tests/open-button.test.js && node tests/format.test.js && node tests/undo.test.js"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2"
+    "@tauri-apps/cli": "^2",
+    "jsdom": "^25.0.1"
   }
 }

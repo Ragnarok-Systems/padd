@@ -29,6 +29,8 @@
       --drop-border: #c0c0c0;
       --scrollbar-thumb: #c0c0c0;
       --scrollbar-hover: #999;
+      --tab-inactive-bg: #e4e6ea;
+      --tab-active-bg: #ffffff;
     }
 
     [data-theme="dark"] {
@@ -50,6 +52,8 @@
       --drop-border: #555555;
       --scrollbar-thumb: #555;
       --scrollbar-hover: #777;
+      --tab-inactive-bg: #2f2f2f;
+      --tab-active-bg: #2b2b2b;
     }
 
     /* ===== Reset & Base ===== */
@@ -109,6 +113,13 @@
       opacity: 0.7;
     }
 
+    #toolbar button:disabled,
+    #tabbar button:disabled {
+      opacity: 0.4;
+      cursor: default;
+      pointer-events: none;
+    }
+
     .zoom-btn {
       min-width: 28px;
       text-align: center;
@@ -120,17 +131,6 @@
       color: var(--text);
       letter-spacing: 0.5px;
       white-space: nowrap;
-      transition: color 0.2s ease;
-    }
-
-    #filename {
-      font-size: 12px;
-      color: var(--text-secondary);
-      -webkit-app-region: no-drag;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 400px;
       transition: color 0.2s ease;
     }
 
@@ -160,11 +160,102 @@
     .win-ctrl:hover { background: rgba(128,128,128,0.2); }
     .win-close:hover { background: #e81123 !important; color: white !important; }
 
+    /* ===== Tab Bar ===== */
+    #tabbar {
+      display: flex;
+      align-items: center;
+      background: var(--toolbar-bg);
+      border-bottom: 1px solid var(--toolbar-border);
+      padding: 0 8px;
+      flex-shrink: 0;
+      min-height: 32px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-app-region: no-drag;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+
+    #tabbar.hidden { display: none; }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px 4px 12px;
+      margin: 4px 2px 0 0;
+      border: 1px solid var(--toolbar-border);
+      border-bottom: none;
+      border-radius: 5px 5px 0 0;
+      background: var(--tab-inactive-bg);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 12px;
+      white-space: nowrap;
+      max-width: 220px;
+      user-select: none;
+    }
+
+    .tab:hover { color: var(--text); }
+
+    .tab.active {
+      background: var(--tab-active-bg);
+      color: var(--text);
+      border-bottom: 1px solid var(--tab-active-bg);
+      margin-bottom: -1px;
+    }
+
+    .tab-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+    }
+
+    .tab.dirty .tab-name::before {
+      content: '• ';
+      color: var(--link);
+      font-weight: bold;
+    }
+
+    .tab-close {
+      background: none;
+      border: none !important;
+      color: inherit;
+      padding: 0 4px !important;
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      border-radius: 3px;
+      opacity: 0.6;
+    }
+    .tab-close:hover {
+      opacity: 1;
+      background: rgba(128,128,128,0.3) !important;
+    }
+
+    #new-tab-btn {
+      background: none;
+      border: none !important;
+      color: var(--text-secondary);
+      font-size: 18px;
+      padding: 0 10px !important;
+      cursor: pointer;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    #new-tab-btn:hover { color: var(--text); background: none !important; }
+
     /* ===== Content Area ===== */
     #content {
       flex: 1;
       overflow-y: auto;
       overflow-x: hidden;
+      position: relative;
+    }
+
+    body.edit-mode #content {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
     /* ===== Drop Zone ===== */
@@ -393,6 +484,24 @@
       max-width: 100%;
     }
 
+    /* ===== Editor ===== */
+    #editor {
+      flex: 1;
+      width: 100%;
+      border: none;
+      outline: none;
+      resize: none;
+      padding: 24px 40px 80px 40px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-y: auto;
+      tab-size: 2;
+      transform-origin: top left;
+    }
+
     /* Scrollbar */
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -406,6 +515,148 @@
     .platform-darwin #toolbar {
       padding-left: 80px;
     }
+
+    /* ===== Format Toolbar (edit mode only) ===== */
+    #format-toolbar {
+      display: none;
+      align-items: center;
+      padding: 4px 12px;
+      background: var(--toolbar-bg);
+      border-bottom: 1px solid var(--toolbar-border);
+      flex-shrink: 0;
+      min-height: 34px;
+      user-select: none;
+      -webkit-app-region: no-drag;
+      gap: 0;
+      overflow-x: auto;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    body.edit-mode #format-toolbar { display: flex; }
+
+    .fmt-group {
+      display: flex;
+      align-items: center;
+      gap: 1px;
+      flex-shrink: 0;
+    }
+
+    .fmt-sep {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+      margin: 0 6px;
+      flex-shrink: 0;
+    }
+
+    .fmt-btn {
+      background: none;
+      border: 1px solid transparent;
+      color: var(--text);
+      min-width: 28px;
+      height: 26px;
+      padding: 0 6px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      border-radius: 3px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s, border-color 0.1s, color 0.1s;
+      line-height: 1;
+      -webkit-app-region: no-drag;
+    }
+    .fmt-btn:hover {
+      background: var(--bg-surface);
+      border-color: var(--border);
+    }
+    .fmt-btn:active { opacity: 0.7; }
+
+    .fmt-btn svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .fmt-btn-bold   { font-family: 'Georgia', 'Times New Roman', serif; font-weight: 800; font-size: 15px; }
+    .fmt-btn-italic { font-family: 'Georgia', 'Times New Roman', serif; font-style: italic; font-weight: 600; font-size: 15px; }
+    .fmt-btn-strike { font-family: 'Georgia', 'Times New Roman', serif; text-decoration: line-through; font-weight: 600; font-size: 15px; }
+    .fmt-btn-h      { font-weight: 700; font-size: 11px; letter-spacing: 0.5px; }
+
+    /* ===== Modal ===== */
+    #modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    #modal-backdrop.hidden { display: none !important; }
+
+    .modal {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 24px 16px 24px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      min-width: 360px;
+      max-width: 480px;
+    }
+
+    .modal-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--heading);
+    }
+
+    .modal-body {
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 16px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .modal-body .modal-path {
+      font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace;
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: block;
+      margin-top: 6px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .modal-actions button {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: inherit;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .modal-actions button:hover { background: var(--bg-surface); }
+    .modal-actions button.primary {
+      background: var(--link);
+      border-color: var(--link);
+      color: #ffffff;
+    }
+    .modal-actions button.primary:hover { opacity: 0.9; background: var(--link); }
   </style>
 </head>
 
@@ -414,7 +665,8 @@
     <div class="toolbar-left">
       <span id="app-brand"><strong>PADD</strong></span>
       <button id="open-btn" title="Open File">Open</button>
-      <span id="filename"></span>
+      <button id="edit-btn" title="Toggle Edit Mode" disabled>Edit</button>
+      <button id="save-btn" title="Save (Ctrl+S)" disabled>Save</button>
     </div>
     <div class="toolbar-right">
       <button class="zoom-btn" id="zoom-out-btn" title="Zoom Out">&#8722;</button>
@@ -424,6 +676,61 @@
       <button class="win-ctrl" id="win-minimize" title="Minimize">&#x2015;</button>
       <button class="win-ctrl" id="win-maximize" title="Maximize">&#x25A1;</button>
       <button class="win-ctrl win-close" id="win-close" title="Close">&#x2715;</button>
+    </div>
+  </div>
+
+  <div id="tabbar" class="hidden"></div>
+
+  <div id="format-toolbar">
+    <div class="fmt-group">
+      <button class="fmt-btn fmt-btn-bold"   data-fmt="bold"   title="Bold (Ctrl+B)">B</button>
+      <button class="fmt-btn fmt-btn-italic" data-fmt="italic" title="Italic (Ctrl+I)">I</button>
+      <button class="fmt-btn fmt-btn-strike" data-fmt="strike" title="Strikethrough">S</button>
+    </div>
+    <div class="fmt-sep"></div>
+    <div class="fmt-group">
+      <button class="fmt-btn fmt-btn-h" data-fmt="h1" title="Heading 1">H1</button>
+      <button class="fmt-btn fmt-btn-h" data-fmt="h2" title="Heading 2">H2</button>
+      <button class="fmt-btn fmt-btn-h" data-fmt="h3" title="Heading 3">H3</button>
+    </div>
+    <div class="fmt-sep"></div>
+    <div class="fmt-group">
+      <button class="fmt-btn" data-fmt="bullet" title="Bullet List">
+        <svg viewBox="0 0 24 24"><circle cx="5" cy="6"  r="1.4" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="5" cy="18" r="1.4" fill="currentColor" stroke="none"/><line x1="10" y1="6"  x2="20" y2="6"/><line x1="10" y1="12" x2="20" y2="12"/><line x1="10" y1="18" x2="20" y2="18"/></svg>
+      </button>
+      <button class="fmt-btn" data-fmt="numbered" title="Numbered List">
+        <svg viewBox="0 0 24 24"><text x="2" y="9"  font-size="6" font-family="sans-serif" font-weight="700" fill="currentColor" stroke="none">1.</text><text x="2" y="15" font-size="6" font-family="sans-serif" font-weight="700" fill="currentColor" stroke="none">2.</text><text x="2" y="21" font-size="6" font-family="sans-serif" font-weight="700" fill="currentColor" stroke="none">3.</text><line x1="10" y1="6"  x2="20" y2="6"/><line x1="10" y1="12" x2="20" y2="12"/><line x1="10" y1="18" x2="20" y2="18"/></svg>
+      </button>
+      <button class="fmt-btn" data-fmt="task" title="Task List">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4"  width="6" height="6" rx="1"/><polyline points="4.5,7 5.8,8.3 7.8,5.7"/><rect x="3" y="15" width="6" height="6" rx="1"/><line x1="12" y1="7"  x2="20" y2="7"/><line x1="12" y1="18" x2="20" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="fmt-sep"></div>
+    <div class="fmt-group">
+      <button class="fmt-btn" data-fmt="quote" title="Blockquote">
+        <svg viewBox="0 0 24 24"><path d="M6 9h3a3 3 0 0 1-3 3M14 9h3a3 3 0 0 1-3 3"/><path d="M6 9v6M14 9v6"/></svg>
+      </button>
+      <button class="fmt-btn" data-fmt="code" title="Inline Code">
+        <svg viewBox="0 0 24 24"><polyline points="8,7 4,12 8,17"/><polyline points="16,7 20,12 16,17"/></svg>
+      </button>
+      <button class="fmt-btn" data-fmt="codeblock" title="Code Block">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><polyline points="9,9 7,12 9,15"/><polyline points="15,9 17,12 15,15"/></svg>
+      </button>
+    </div>
+    <div class="fmt-sep"></div>
+    <div class="fmt-group">
+      <button class="fmt-btn" data-fmt="link" title="Link (Ctrl+K)">
+        <svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
+      </button>
+      <button class="fmt-btn" data-fmt="image" title="Image">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><polyline points="5,18 10,13 14,16 19,11 21,13"/></svg>
+      </button>
+      <button class="fmt-btn" data-fmt="hr" title="Horizontal Rule">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/></svg>
+      </button>
+      <button class="fmt-btn" data-fmt="mermaid" title="Insert Mermaid Diagram">
+        <svg viewBox="0 0 24 24"><rect x="9" y="3"  width="6" height="4" rx="1"/><rect x="3" y="17" width="6" height="4" rx="1"/><rect x="15" y="17" width="6" height="4" rx="1"/><path d="M12 7v4M12 11l-6 6M12 11l6 6"/></svg>
+      </button>
     </div>
   </div>
 
@@ -437,6 +744,15 @@
       </div>
     </div>
     <article id="markdown-body" class="hidden"></article>
+    <textarea id="editor" class="hidden" spellcheck="false"></textarea>
+  </div>
+
+  <div id="modal-backdrop" class="hidden">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-title" id="modal-title">Source changed</div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-actions" id="modal-actions"></div>
+    </div>
   </div>
 
   <!-- Libraries (browser builds) -->
@@ -451,15 +767,33 @@
 
     // ===== State =====
     let currentZoom = 100;
-    let currentDirUrl = '';
-    let isDark = localStorage.getItem('padd-theme') !== 'light'; // default dark
+    let isDark = localStorage.getItem('padd-theme') !== 'light';
     let mermaidReady = false;
     let mermaidLoading = false;
+
+    // Tabs: each tab = { id, filePath, dirUrl, name, content, isDirty, mode, mtime, prompting }
+    // mode is 'view' or 'edit'. mtime is ms since epoch (0 = unknown).
+    // prompting=true while a source-changed modal is open for this tab.
+    const tabs = [];
+    let activeTabId = null;
+    let nextTabId = 1;
+
+    // DOM refs
+    const $tabbar = document.getElementById('tabbar');
+    const $content = document.getElementById('content');
+    const $dropZone = document.getElementById('drop-zone');
+    const $body = document.getElementById('markdown-body');
+    const $editor = document.getElementById('editor');
+    const $editBtn = document.getElementById('edit-btn');
+    const $saveBtn = document.getElementById('save-btn');
+    const $modalBackdrop = document.getElementById('modal-backdrop');
+    const $modalTitle = document.getElementById('modal-title');
+    const $modalBody = document.getElementById('modal-body');
+    const $modalActions = document.getElementById('modal-actions');
 
     // Configure marked for GFM
     marked.use({ gfm: true, breaks: false });
 
-    // Highlight helper
     function highlightCode(code, language) {
       if (language && hljs.getLanguage(language)) {
         try { return hljs.highlight(code, { language }).value; } catch (_) {}
@@ -468,12 +802,10 @@
       return null;
     }
 
-    // Detect platform from user agent
     const platform = navigator.userAgent.includes('Mac') ? 'darwin'
       : navigator.userAgent.includes('Win') ? 'win32'
       : 'linux';
 
-    // Lazy-load mermaid only when a mermaid diagram is encountered
     function loadMermaid() {
       if (mermaidReady || mermaidLoading) return Promise.resolve();
       mermaidLoading = true;
@@ -497,28 +829,20 @@
 
     // ===== Init =====
     (function init() {
-      // Platform class for toolbar padding
       if (platform === 'darwin') {
         document.body.classList.add('platform-darwin');
         const kbd = document.querySelector('.drop-hint kbd');
-        if (kbd) kbd.textContent = '\u2318+O';
+        if (kbd) kbd.textContent = '⌘+O';
       }
 
-      // Hide window controls on macOS (uses native traffic lights)
       if (platform !== 'win32') {
         document.querySelectorAll('.win-ctrl').forEach(el => el.style.display = 'none');
       }
 
-      // Apply theme
       applyTheme();
 
-      // Check if opened via file association (double-click .md file)
       invoke('get_initial_file').then(data => {
-        if (data) {
-          currentDirUrl = data.dirUrl || '';
-          document.getElementById('filename').textContent = data.name;
-          renderMarkdown(data.content);
-        }
+        if (data) addOrFocusTab(data);
       }).catch(() => {});
     })();
 
@@ -529,26 +853,181 @@
       document.getElementById('hljs-dark').disabled = !isDark;
     }
 
+    // ===== Tab Management =====
+    function getActiveTab() {
+      return tabs.find(t => t.id === activeTabId) || null;
+    }
+
+    function findTabByPath(filePath) {
+      if (!filePath) return null;
+      return tabs.find(t => t.filePath === filePath) || null;
+    }
+
+    function addOrFocusTab(data) {
+      const existing = findTabByPath(data.filePath);
+      if (existing) {
+        switchTab(existing.id);
+        // Same-content re-open: silent refresh. Otherwise prompt.
+        if (existing.content === data.content) {
+          existing.mtime = data.mtime || existing.mtime;
+          return existing;
+        }
+        promptSourceChanged(existing, data.content, data.mtime || 0);
+        return existing;
+      }
+      const tab = {
+        id: nextTabId++,
+        filePath: data.filePath || '',
+        dirUrl: data.dirUrl || '',
+        name: data.name || 'untitled',
+        content: data.content || '',
+        isDirty: false,
+        mode: 'view',
+        mtime: data.mtime || 0,
+        prompting: false,
+        viewScroll: 0,
+        editorScroll: 0,
+        editorCaret: 0,
+      };
+      tabs.push(tab);
+      activeTabId = tab.id;
+      renderTabBar();
+      renderActiveTab();
+      return tab;
+    }
+
+    function switchTab(id) {
+      if (activeTabId === id) return;
+      captureActiveTabState();
+      activeTabId = id;
+      renderTabBar();
+      renderActiveTab();
+    }
+
+    function captureActiveTabState() {
+      const tab = getActiveTab();
+      if (!tab) return;
+      if (tab.mode === 'edit') {
+        tab.editorCaret = $editor.selectionStart;
+        tab.editorScroll = $editor.scrollTop;
+      } else {
+        tab.viewScroll = $content.scrollTop;
+      }
+    }
+
+    function closeTab(id) {
+      const idx = tabs.findIndex(t => t.id === id);
+      if (idx < 0) return;
+      const tab = tabs[idx];
+      if (tab.isDirty) {
+        const ok = confirm(`"${tab.name}" has unsaved changes. Close anyway?`);
+        if (!ok) return;
+      }
+      tabs.splice(idx, 1);
+      if (activeTabId === id) {
+        const next = tabs[idx] || tabs[idx - 1] || null;
+        activeTabId = next ? next.id : null;
+      }
+      renderTabBar();
+      renderActiveTab();
+    }
+
+    function renderTabBar() {
+      if (tabs.length === 0) {
+        $tabbar.classList.add('hidden');
+        $tabbar.innerHTML = '';
+        return;
+      }
+      $tabbar.classList.remove('hidden');
+      $tabbar.innerHTML = '';
+      for (const tab of tabs) {
+        const el = document.createElement('div');
+        el.className = 'tab' + (tab.id === activeTabId ? ' active' : '') + (tab.isDirty ? ' dirty' : '');
+        el.title = tab.filePath || tab.name;
+        el.innerHTML = `<span class="tab-name"></span><button class="tab-close" title="Close">×</button>`;
+        el.querySelector('.tab-name').textContent = tab.name;
+        el.addEventListener('mousedown', (e) => {
+          if (e.button === 1) { e.preventDefault(); closeTab(tab.id); return; }
+          if (e.target.classList.contains('tab-close')) return;
+          switchTab(tab.id);
+        });
+        el.querySelector('.tab-close').addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeTab(tab.id);
+        });
+        $tabbar.appendChild(el);
+      }
+      const plus = document.createElement('button');
+      plus.id = 'new-tab-btn';
+      plus.title = 'Open File';
+      plus.textContent = '+';
+      plus.disabled = openDialogInFlight;
+      plus.addEventListener('click', () => openPickedFile().catch(err => console.error(err)));
+      $tabbar.appendChild(plus);
+    }
+
+    function renderActiveTab() {
+      const tab = getActiveTab();
+      if (!tab) {
+        document.title = 'PADD';
+        document.body.classList.remove('edit-mode');
+        $body.classList.add('hidden');
+        $editor.classList.add('hidden');
+        $dropZone.classList.remove('hidden');
+        $editBtn.disabled = true;
+        $editBtn.textContent = 'Edit';
+        $saveBtn.disabled = true;
+        return;
+      }
+      document.title = `${tab.name}${tab.isDirty ? ' •' : ''} · PADD`;
+      $editBtn.disabled = false;
+      $editBtn.textContent = tab.mode === 'edit' ? 'View' : 'Edit';
+      $saveBtn.disabled = !tab.isDirty;
+      $dropZone.classList.add('hidden');
+
+      if (tab.mode === 'edit') {
+        document.body.classList.add('edit-mode');
+        $body.classList.add('hidden');
+        $editor.classList.remove('hidden');
+        if ($editor.value !== tab.content) $editor.value = tab.content;
+        $editor.style.zoom = currentZoom / 100;
+        const caret = Math.min(tab.editorCaret || 0, $editor.value.length);
+        $editor.setSelectionRange(caret, caret);
+        $editor.scrollTop = tab.editorScroll || 0;
+        $editor.focus();
+      } else {
+        document.body.classList.remove('edit-mode');
+        $editor.classList.add('hidden');
+        $body.classList.remove('hidden');
+        renderMarkdown(tab);
+      }
+    }
+
+    function setActiveTabDirty(dirty) {
+      const tab = getActiveTab();
+      if (!tab) return;
+      const changed = tab.isDirty !== dirty;
+      tab.isDirty = dirty;
+      $saveBtn.disabled = !dirty;
+      document.title = `${tab.name}${dirty ? ' •' : ''} · PADD`;
+      if (changed) renderTabBar();
+    }
+
     // ===== Render Markdown =====
-    async function renderMarkdown(content) {
-      const body = document.getElementById('markdown-body');
-      const dropZone = document.getElementById('drop-zone');
+    async function renderMarkdown(tab) {
+      const html = marked.parse(tab.content);
+      $body.innerHTML = html;
 
-      const html = marked.parse(content);
-      body.innerHTML = html;
-
-      // Resolve relative image paths
-      if (currentDirUrl) {
-        body.querySelectorAll('img').forEach(img => {
+      if (tab.dirUrl) {
+        $body.querySelectorAll('img').forEach(img => {
           const src = img.getAttribute('src');
           if (src && !src.startsWith('http') && !src.startsWith('data:') && !src.startsWith('file:') && !src.startsWith('asset:') && !src.startsWith('tauri:')) {
-            img.src = currentDirUrl + src;
+            img.src = tab.dirUrl + src;
           }
         });
       }
 
-      // Convert mermaid code blocks to mermaid elements
-      body.querySelectorAll('code.language-mermaid').forEach(codeEl => {
+      $body.querySelectorAll('code.language-mermaid').forEach(codeEl => {
         const pre = codeEl.closest('pre');
         if (!pre) return;
         const div = document.createElement('pre');
@@ -557,8 +1036,7 @@
         pre.replaceWith(div);
       });
 
-      // Highlight code blocks (skip mermaid)
-      body.querySelectorAll('pre code').forEach(el => {
+      $body.querySelectorAll('pre code').forEach(el => {
         const langClass = Array.from(el.classList).find(c => c.startsWith('language-'));
         const lang = langClass ? langClass.replace('language-', '') : null;
         if (lang !== 'mermaid') {
@@ -570,21 +1048,12 @@
         }
       });
 
-      // Render mermaid diagrams
       await renderMermaidDiagrams();
 
-      // Show content, hide drop zone
-      body.classList.remove('hidden');
-      dropZone.classList.add('hidden');
-
-      // Apply current zoom
-      body.style.zoom = currentZoom / 100;
-
-      // Scroll to top
-      document.getElementById('content').scrollTop = 0;
+      $body.style.zoom = currentZoom / 100;
+      $content.scrollTop = tab.viewScroll || 0;
     }
 
-    // ===== Mermaid Rendering (lazy-loaded) =====
     async function renderMermaidDiagrams() {
       const elements = document.querySelectorAll('#markdown-body .mermaid');
       if (elements.length === 0) return;
@@ -622,65 +1091,434 @@
       }
     }
 
-    // ===== Theme Toggle =====
     function toggleTheme() {
       isDark = !isDark;
       localStorage.setItem('padd-theme', isDark ? 'dark' : 'light');
       applyTheme();
-      renderMermaidDiagrams();
+      const tab = getActiveTab();
+      if (tab && tab.mode === 'view') renderMermaidDiagrams();
     }
 
-    // ===== Zoom =====
     function setZoom(level, cursorX, cursorY) {
       const oldZoom = currentZoom;
       currentZoom = Math.max(50, Math.min(400, level));
-      const body = document.getElementById('markdown-body');
-      const content = document.getElementById('content');
-      if (!body) return;
+      document.getElementById('zoom-level').textContent = currentZoom + '%';
 
-      if (cursorX !== undefined && cursorY !== undefined && oldZoom !== currentZoom) {
-        const contentRect = content.getBoundingClientRect();
-        const mx = cursorX - contentRect.left;
-        const my = cursorY - contentRect.top;
-        const docX = (content.scrollLeft + mx) / (oldZoom / 100);
-        const docY = (content.scrollTop + my) / (oldZoom / 100);
-        body.style.zoom = currentZoom / 100;
-        content.scrollLeft = docX * (currentZoom / 100) - mx;
-        content.scrollTop = docY * (currentZoom / 100) - my;
-      } else {
-        body.style.zoom = currentZoom / 100;
+      const tab = getActiveTab();
+      if (!tab) return;
+
+      if (tab.mode === 'edit') {
+        $editor.style.zoom = currentZoom / 100;
+        return;
       }
 
-      document.getElementById('zoom-level').textContent = currentZoom + '%';
+      if (cursorX !== undefined && cursorY !== undefined && oldZoom !== currentZoom) {
+        const contentRect = $content.getBoundingClientRect();
+        const mx = cursorX - contentRect.left;
+        const my = cursorY - contentRect.top;
+        const docX = ($content.scrollLeft + mx) / (oldZoom / 100);
+        const docY = ($content.scrollTop + my) / (oldZoom / 100);
+        $body.style.zoom = currentZoom / 100;
+        $content.scrollLeft = docX * (currentZoom / 100) - mx;
+        $content.scrollTop = docY * (currentZoom / 100) - my;
+      } else {
+        $body.style.zoom = currentZoom / 100;
+      }
     }
 
-    // ===== Event Listeners =====
+    // ===== Open / Save =====
+    let openDialogInFlight = false;
+    function setOpenButtonsDisabled(disabled) {
+      const openBtn = document.getElementById('open-btn');
+      if (openBtn) openBtn.disabled = disabled;
+      const plus = document.getElementById('new-tab-btn');
+      if (plus) plus.disabled = disabled;
+    }
+    async function openPickedFile() {
+      if (openDialogInFlight) return;
+      openDialogInFlight = true;
+      setOpenButtonsDisabled(true);
+      try {
+        const data = await invoke('open_file_dialog');
+        if (data) addOrFocusTab(data);
+      } finally {
+        // Defer unlock past the next macrotask tick. WebView2 can queue
+        // clicks at the OS input layer while the file dialog is open (window
+        // is unfocused) and dispatch them as DOM clicks *after* the dialog
+        // closes. Without this delay, that queued click sees a re-enabled
+        // button and opens a second dialog. The timeout lets queued events
+        // drain against the still-locked state.
+        setTimeout(() => {
+          openDialogInFlight = false;
+          setOpenButtonsDisabled(false);
+        }, 250);
+      }
+    }
 
-    // Window controls
+    async function saveActiveTab() {
+      const tab = getActiveTab();
+      if (!tab || !tab.isDirty || !tab.filePath) return;
+      const wasEdit = tab.mode === 'edit';
+      const caret = wasEdit ? $editor.selectionStart : null;
+      const scroll = wasEdit ? $editor.scrollTop : null;
+      try {
+        await invoke('save_file', { filePath: tab.filePath, content: tab.content });
+        setActiveTabDirty(false);
+        // Refresh mtime so the watcher doesn't false-trigger from our own save.
+        try {
+          tab.mtime = await invoke('get_mtime', { filePath: tab.filePath });
+        } catch (_) {}
+        // Restore focus + caret/scroll lost when the Save button took focus.
+        if (wasEdit) {
+          $editor.focus();
+          if (caret !== null) $editor.setSelectionRange(caret, caret);
+          if (scroll !== null) $editor.scrollTop = scroll;
+          tab.editorCaret = caret || 0;
+          tab.editorScroll = scroll || 0;
+        }
+      } catch (e) {
+        console.error('Save failed:', e);
+        alert('Failed to save: ' + e);
+      }
+    }
+
+    function toggleEditMode() {
+      const tab = getActiveTab();
+      if (!tab) return;
+      captureActiveTabState();
+      tab.mode = tab.mode === 'edit' ? 'view' : 'edit';
+      renderActiveTab();
+    }
+
+    // ===== Format transforms (pure; tested in tests/format.test.js) =====
+    function wrapText(value, start, end, prefix, suffix, placeholder) {
+      const before = value.slice(0, start);
+      const selected = value.slice(start, end);
+      const after = value.slice(end);
+      // Toggle-off: if selection (or surrounding text) is already wrapped, unwrap it.
+      if (selected.startsWith(prefix) && selected.endsWith(suffix) && selected.length >= prefix.length + suffix.length) {
+        const inner = selected.slice(prefix.length, selected.length - suffix.length);
+        return {
+          value: before + inner + after,
+          start: start,
+          end: start + inner.length,
+        };
+      }
+      if (before.endsWith(prefix) && after.startsWith(suffix)) {
+        return {
+          value: before.slice(0, before.length - prefix.length) + selected + after.slice(suffix.length),
+          start: start - prefix.length,
+          end: end - prefix.length,
+        };
+      }
+      if (selected) {
+        return {
+          value: before + prefix + selected + suffix + after,
+          start: start + prefix.length,
+          end: start + prefix.length + selected.length,
+        };
+      }
+      const ins = prefix + placeholder + suffix;
+      return {
+        value: before + ins + after,
+        start: start + prefix.length,
+        end: start + prefix.length + placeholder.length,
+      };
+    }
+
+    function prefixLines(value, start, end, prefix) {
+      const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+      // Selection covers lines [lineStart..end). Find each line's start within range.
+      const region = value.slice(lineStart, end);
+      const lines = region.split('\n');
+      // Toggle off if every non-empty line already starts with prefix.
+      const allHavePrefix = lines.every((ln) => ln === '' || ln.startsWith(prefix));
+      let newRegion;
+      let delta;
+      if (allHavePrefix) {
+        newRegion = lines.map((ln) => (ln.startsWith(prefix) ? ln.slice(prefix.length) : ln)).join('\n');
+        delta = -prefix.length * lines.filter((ln) => ln.startsWith(prefix)).length;
+      } else {
+        newRegion = lines.map((ln) => prefix + ln).join('\n');
+        delta = prefix.length * lines.length;
+      }
+      const newValue = value.slice(0, lineStart) + newRegion + value.slice(end);
+      // Shift the caret/selection by the prefix on the FIRST line (so caret stays near where it was).
+      const firstLineDelta = allHavePrefix
+        ? (lines[0].startsWith(prefix) ? -prefix.length : 0)
+        : prefix.length;
+      const newStart = Math.max(lineStart, start + firstLineDelta);
+      const newEnd = end + delta;
+      return { value: newValue, start: newStart, end: newEnd };
+    }
+
+    function insertBlock(value, start, end, block, cursorOffsetFromBlockStart, selectLen) {
+      const before = value.slice(0, start);
+      const after = value.slice(end);
+      const needLead = before.length > 0 && !before.endsWith('\n');
+      const needTrail = after.length > 0 && !after.startsWith('\n');
+      const lead = needLead ? '\n' : '';
+      const trail = needTrail ? '\n' : '';
+      const full = lead + block + trail;
+      const newValue = before + full + after;
+      const caret = before.length + lead.length + cursorOffsetFromBlockStart;
+      return {
+        value: newValue,
+        start: caret,
+        end: caret + (selectLen || 0),
+      };
+    }
+
+    function applyFormat(name, value, start, end) {
+      const sel = value.slice(start, end);
+      switch (name) {
+        case 'bold':       return wrapText(value, start, end, '**', '**', 'bold text');
+        case 'italic':     return wrapText(value, start, end, '*',  '*',  'italic text');
+        case 'strike':     return wrapText(value, start, end, '~~', '~~', 'text');
+        case 'code':       return wrapText(value, start, end, '`',  '`',  'code');
+        case 'h1':         return prefixLines(value, start, end, '# ');
+        case 'h2':         return prefixLines(value, start, end, '## ');
+        case 'h3':         return prefixLines(value, start, end, '### ');
+        case 'bullet':     return prefixLines(value, start, end, '- ');
+        case 'numbered':   return prefixLines(value, start, end, '1. ');
+        case 'task':       return prefixLines(value, start, end, '- [ ] ');
+        case 'quote':      return prefixLines(value, start, end, '> ');
+        case 'link':
+          if (sel && /^https?:\/\//i.test(sel)) {
+            return wrapText(value, start, end, '[text](', ')', sel);
+          }
+          return wrapText(value, start, end, '[', '](url)', 'link text');
+        case 'image':      return wrapText(value, start, end, '![', '](image-url)', 'alt text');
+        case 'codeblock':
+          if (sel) {
+            return insertBlock(value, start, end, '```\n' + sel + '\n```', 4, sel.length);
+          }
+          return insertBlock(value, start, end, '```\ncode\n```', 4, 4);
+        case 'mermaid':
+          if (sel) {
+            return insertBlock(value, start, end, '```mermaid\n' + sel + '\n```', 11, sel.length);
+          }
+          return insertBlock(value, start, end, '```mermaid\ngraph TD\n  A --> B\n```', 11, 8);
+        case 'hr':         return insertBlock(value, start, end, '---', 3, 0);
+        default:           return { value, start, end };
+      }
+    }
+    // Smallest contiguous edit that turns oldValue into newValue.
+    // Used so format operations apply via execCommand('insertText'), which
+    // pushes the change into the textarea undo stack (Ctrl+Z works).
+    function computeMinimalDiff(oldValue, newValue) {
+      if (oldValue === newValue) return null;
+      let prefixLen = 0;
+      const minLen = Math.min(oldValue.length, newValue.length);
+      while (prefixLen < minLen && oldValue[prefixLen] === newValue[prefixLen]) prefixLen++;
+      let suffixLen = 0;
+      while (
+        suffixLen < (minLen - prefixLen) &&
+        oldValue[oldValue.length - 1 - suffixLen] === newValue[newValue.length - 1 - suffixLen]
+      ) suffixLen++;
+      return {
+        replaceStart: prefixLen,
+        replaceEnd: oldValue.length - suffixLen,
+        replacement: newValue.slice(prefixLen, newValue.length - suffixLen),
+      };
+    }
+    // Expose for tests
+    window.applyFormat = applyFormat;
+    window.computeMinimalDiff = computeMinimalDiff;
+    window.__paddTest = { get runFormat() { return runFormat; }, get addOrFocusTab() { return addOrFocusTab; }, get getActiveTab() { return getActiveTab; } };
+
+    function runFormat(name) {
+      const tab = getActiveTab();
+      if (!tab || tab.mode !== 'edit') return;
+      const oldValue = $editor.value;
+      const r = applyFormat(name, oldValue, $editor.selectionStart, $editor.selectionEnd);
+      if (r.value === oldValue) return;
+      const diff = computeMinimalDiff(oldValue, r.value);
+      if (!diff) return;
+
+      $editor.focus();
+      $editor.setSelectionRange(diff.replaceStart, diff.replaceEnd);
+      // execCommand is "deprecated" but it's still the ONLY way to push an
+      // edit into the native textarea undo stack. Without it, Ctrl+Z would
+      // skip past format operations.
+      const ok = document.execCommand('insertText', false, diff.replacement);
+      if (!ok) {
+        // Fallback for environments where execCommand fails (edit still works,
+        // but won't be undoable in those environments).
+        $editor.value = r.value;
+        $editor.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      $editor.setSelectionRange(r.start, r.end);
+      // (the 'input' event from execCommand triggers the listener that
+      // updates tab.content and dirty state — no manual sync needed.)
+    }
+
+    // ===== Modal =====
+    function showModal({ title, body, actions }) {
+      $modalTitle.textContent = title;
+      if (typeof body === 'string') {
+        $modalBody.textContent = body;
+      } else {
+        $modalBody.innerHTML = '';
+        $modalBody.appendChild(body);
+      }
+      $modalActions.innerHTML = '';
+      for (const a of actions) {
+        const btn = document.createElement('button');
+        btn.textContent = a.label;
+        if (a.primary) btn.classList.add('primary');
+        btn.addEventListener('click', () => {
+          hideModal();
+          a.onClick && a.onClick();
+        });
+        $modalActions.appendChild(btn);
+      }
+      $modalBackdrop.classList.remove('hidden');
+      const primary = $modalActions.querySelector('button.primary')
+        || $modalActions.querySelector('button');
+      if (primary) primary.focus();
+    }
+
+    function hideModal() {
+      $modalBackdrop.classList.add('hidden');
+    }
+
+    function promptSourceChanged(tab, newContent, newMtime) {
+      if (tab.prompting) return;
+      tab.prompting = true;
+
+      const dirtyNote = tab.isDirty
+        ? 'You have unsaved edits in this tab. Reloading will discard them.'
+        : 'The file changed on disk.';
+
+      const body = document.createElement('div');
+      body.textContent = `Hey dude... ummm source changed. ${dirtyNote}`;
+      const pathEl = document.createElement('span');
+      pathEl.className = 'modal-path';
+      pathEl.textContent = tab.filePath;
+      body.appendChild(pathEl);
+
+      showModal({
+        title: 'Source changed',
+        body,
+        actions: [
+          {
+            label: 'Keep my version',
+            onClick: () => {
+              tab.prompting = false;
+              // Adopt the new mtime so we don't re-prompt for this same change.
+              if (newMtime) tab.mtime = newMtime;
+            },
+          },
+          {
+            label: 'Reload from disk',
+            primary: true,
+            onClick: () => {
+              tab.content = newContent;
+              tab.isDirty = false;
+              if (newMtime) tab.mtime = newMtime;
+              tab.prompting = false;
+              if (tab.id === activeTabId) {
+                if (tab.mode === 'edit') $editor.value = tab.content;
+                renderActiveTab();
+              }
+              renderTabBar();
+            },
+          },
+        ],
+      });
+    }
+
+    // ===== File-change poller =====
+    let pollInFlight = false;
+    async function pollFileChanges() {
+      if (pollInFlight) return;
+      pollInFlight = true;
+      try {
+        for (const tab of tabs) {
+          if (!tab.filePath || tab.prompting) continue;
+          let mtime;
+          try {
+            mtime = await invoke('get_mtime', { filePath: tab.filePath });
+          } catch (_) { continue; }
+          if (!tab.mtime) { tab.mtime = mtime; continue; }
+          if (mtime > tab.mtime) {
+            // File changed on disk — read it and prompt.
+            try {
+              const data = await invoke('read_file', { filePath: tab.filePath });
+              if (data && data.content !== tab.content) {
+                promptSourceChanged(tab, data.content, data.mtime || mtime);
+              } else {
+                tab.mtime = mtime; // content identical, just absorb the new mtime
+              }
+            } catch (e) {
+              console.warn('Failed to re-read changed file:', e);
+            }
+          }
+        }
+      } finally {
+        pollInFlight = false;
+      }
+    }
+    setInterval(pollFileChanges, 1500);
+
+    // ===== Event Listeners =====
     document.getElementById('win-minimize').addEventListener('click', () => invoke('minimize_window'));
     document.getElementById('win-maximize').addEventListener('click', () => invoke('maximize_window'));
     document.getElementById('win-close').addEventListener('click', () => invoke('close_window'));
 
-    // Toolbar buttons
     document.getElementById('open-btn').addEventListener('click', () => {
-      invoke('open_file_dialog').then(data => {
-        if (data) {
-          currentDirUrl = data.dirUrl || '';
-          document.getElementById('filename').textContent = data.name;
-          renderMarkdown(data.content);
-        }
-      });
+      openPickedFile().catch(err => console.error('Failed to open file:', err));
     });
     document.getElementById('zoom-in-btn').addEventListener('click', () => setZoom(currentZoom + 10));
     document.getElementById('zoom-out-btn').addEventListener('click', () => setZoom(currentZoom - 10));
     document.getElementById('theme-btn').addEventListener('click', toggleTheme);
+    $editBtn.addEventListener('click', toggleEditMode);
+    $saveBtn.addEventListener('click', () => saveActiveTab());
 
-    // IPC from Tauri backend
+    // Format toolbar — single delegated click handler
+    document.getElementById('format-toolbar').addEventListener('click', (e) => {
+      const btn = e.target.closest('.fmt-btn');
+      if (!btn) return;
+      const name = btn.getAttribute('data-fmt');
+      if (name) runFormat(name);
+    });
+
+    // Prevent textarea from losing focus on toolbar mousedown (so selection survives)
+    document.getElementById('format-toolbar').addEventListener('mousedown', (e) => {
+      if (e.target.closest('.fmt-btn')) e.preventDefault();
+    });
+
+    $editor.addEventListener('input', () => {
+      const tab = getActiveTab();
+      if (!tab) return;
+      tab.content = $editor.value;
+      tab.editorCaret = $editor.selectionStart;
+      tab.editorScroll = $editor.scrollTop;
+      setActiveTabDirty(true);
+    });
+
+    $editor.addEventListener('scroll', () => {
+      const tab = getActiveTab();
+      if (tab && tab.mode === 'edit') tab.editorScroll = $editor.scrollTop;
+    });
+
+    function captureEditorCaret() {
+      const tab = getActiveTab();
+      if (tab && tab.mode === 'edit') tab.editorCaret = $editor.selectionStart;
+    }
+    $editor.addEventListener('click', captureEditorCaret);
+    $editor.addEventListener('keyup', captureEditorCaret);
+    $editor.addEventListener('select', captureEditorCaret);
+
+    $content.addEventListener('scroll', () => {
+      const tab = getActiveTab();
+      if (tab && tab.mode === 'view') tab.viewScroll = $content.scrollTop;
+    });
+
+    // IPC from Tauri backend (also fired by single-instance with new file)
     listen('file-opened', (event) => {
-      const data = event.payload;
-      currentDirUrl = data.dirUrl || '';
-      document.getElementById('filename').textContent = data.name || 'PADD';
-      renderMarkdown(data.content);
+      addOrFocusTab(event.payload);
     });
 
     listen('zoom', (event) => {
@@ -696,53 +1534,76 @@
     const appWindow = getCurrentWindow();
     appWindow.onDragDropEvent(async (event) => {
       if (event.payload.type === 'over') {
-        document.getElementById('drop-zone').classList.add('drag-over');
+        $dropZone.classList.add('drag-over');
       } else if (event.payload.type === 'cancel' || event.payload.type === 'leave') {
-        document.getElementById('drop-zone').classList.remove('drag-over');
+        $dropZone.classList.remove('drag-over');
       } else if (event.payload.type === 'drop') {
-        document.getElementById('drop-zone').classList.remove('drag-over');
-        const paths = event.payload.paths;
-        if (paths.length > 0) {
-          const path = paths[0];
-          if (path.endsWith('.md') || path.endsWith('.markdown')) {
-            try {
-              const result = await invoke('read_file', { filePath: path });
-              if (result && result.content) {
-                currentDirUrl = result.dirUrl || '';
-                document.getElementById('filename').textContent = result.name;
-                renderMarkdown(result.content);
-              }
-            } catch (e) {
-              console.error('Failed to read dropped file:', e);
-            }
+        $dropZone.classList.remove('drag-over');
+        const paths = event.payload.paths || [];
+        for (const path of paths) {
+          if (!/\.(md|markdown)$/i.test(path)) continue;
+          try {
+            const result = await invoke('read_file', { filePath: path });
+            if (result) addOrFocusTab(result);
+          } catch (e) {
+            console.error('Failed to read dropped file:', e);
           }
         }
       }
     });
 
-    // Ctrl+Mousewheel zoom towards cursor
-    document.getElementById('content').addEventListener('wheel', (e) => {
+    // Ctrl+Mousewheel zoom towards cursor (view mode only)
+    $content.addEventListener('wheel', (e) => {
       if (!e.ctrlKey && !e.metaKey) return;
+      const tab = getActiveTab();
+      if (tab && tab.mode === 'edit') return;
       e.preventDefault();
       const step = e.deltaY < 0 ? 10 : -10;
       setZoom(currentZoom + step, e.clientX, e.clientY);
     }, { passive: false });
 
-    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
       const mod = e.metaKey || e.ctrlKey;
-      if (mod && e.key === '=') { e.preventDefault(); setZoom(currentZoom + 10); }
-      else if (mod && e.key === '-') { e.preventDefault(); setZoom(currentZoom - 10); }
-      else if (mod && e.key === '0') { e.preventDefault(); setZoom(100); }
-      else if (mod && e.key === 'o') {
+      if (!mod) return;
+      if (e.key === '=' || e.key === '+') { e.preventDefault(); setZoom(currentZoom + 10); }
+      else if (e.key === '-') { e.preventDefault(); setZoom(currentZoom - 10); }
+      else if (e.key === '0') { e.preventDefault(); setZoom(100); }
+      else if (e.key === 'o' || e.key === 'O') {
         e.preventDefault();
-        invoke('open_file_dialog').then(data => {
-          if (data) {
-            currentDirUrl = data.dirUrl || '';
-            document.getElementById('filename').textContent = data.name;
-            renderMarkdown(data.content);
-          }
-        });
+        openPickedFile().catch(err => console.error('Failed to open file:', err));
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        saveActiveTab();
+      } else if (e.key === 'e' || e.key === 'E') {
+        if (e.shiftKey) return; // allow ctrl+shift+E for other things
+        e.preventDefault();
+        toggleEditMode();
+      } else if (e.key === 'w' || e.key === 'W') {
+        e.preventDefault();
+        if (activeTabId !== null) closeTab(activeTabId);
+      } else if (e.key === 'Tab') {
+        // Ctrl+Tab cycles tabs
+        if (tabs.length < 2) return;
+        e.preventDefault();
+        const idx = tabs.findIndex(t => t.id === activeTabId);
+        const dir = e.shiftKey ? -1 : 1;
+        const nextIdx = (idx + dir + tabs.length) % tabs.length;
+        switchTab(tabs[nextIdx].id);
+      } else if (e.key === 'b' || e.key === 'B') {
+        const tab = getActiveTab();
+        if (!tab || tab.mode !== 'edit') return;
+        e.preventDefault();
+        runFormat('bold');
+      } else if (e.key === 'i' || e.key === 'I') {
+        const tab = getActiveTab();
+        if (!tab || tab.mode !== 'edit') return;
+        e.preventDefault();
+        runFormat('italic');
+      } else if (e.key === 'k' || e.key === 'K') {
+        const tab = getActiveTab();
+        if (!tab || tab.mode !== 'edit') return;
+        e.preventDefault();
+        runFormat('link');
       }
     });
   </script>
